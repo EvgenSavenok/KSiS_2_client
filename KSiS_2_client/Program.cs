@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
 
 class Client
@@ -12,7 +11,6 @@ class Client
     IPEndPoint remoteEndPoint;
     private void DisplayData()
     {
-        Console.WriteLine("Вы успешено вошли в чат.");
         Console.WriteLine("Список команд:");
         Console.WriteLine("/1. Написать пользователю.");
         Console.WriteLine("/2. Выйти из программы.");
@@ -24,8 +22,8 @@ class Client
             while (true)
             {
                 byte[] buffer = new byte[1024];
-                int bytesRec = clientSocket.Receive(buffer);
-                string receivedMessage = Encoding.UTF8.GetString(buffer);
+                int numOfBytes = clientSocket.Receive(buffer);
+                string receivedMessage = Encoding.UTF8.GetString(buffer, 0, numOfBytes);
                 Console.WriteLine(receivedMessage);
             }
         }
@@ -38,12 +36,31 @@ class Client
     {
         try
         {
-            byte[] buf = Encoding.UTF8.GetBytes(message);
-            clientSocket.Send(buf);
+            SendMessage(message);
         }
         catch (Exception e)
         {
             Console.WriteLine(e.ToString());
+        }
+        Console.WriteLine("Введите ID пользователя, которому хотите написать.");
+        do
+        {
+            string mes = Console.ReadLine();
+            SendMessage(mes);
+        } while (message != "/exit");
+    }
+
+    private void SendMessage(string message)
+    {
+        try
+        {
+            byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+            clientSocket.Send(byteMessage);
+        }
+        catch (Exception) 
+        {
+            Console.WriteLine("Не удалось отправить запрос на сервер, " +
+                "ошибка номер 52.");
         }
     }
     private void StartCommunication()
@@ -61,10 +78,10 @@ class Client
                 case "/1":
                     ChooseReceiver(message);
                     break;
-                case "/2":
-                    Environment.Exit(0);
+                default:
+                    SendMessage(message);
                     break;
-            }
+            }           
         }
     }
     private void StartConnection()
@@ -75,6 +92,7 @@ class Client
             isCorrect = true;
             try
             {
+                Console.WriteLine("Добро пожаловать в приложение ChatSirinity!");
                 Console.WriteLine("Введите Ваше имя:");
                 clientName = Console.ReadLine();
 
@@ -87,6 +105,7 @@ class Client
                 remoteEndPoint = new IPEndPoint(IPAddress.Parse(serverIP), port);
                 clientSocket = new Socket(remoteEndPoint.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 clientSocket.Connect(remoteEndPoint);
+                Console.WriteLine("Вы успешено вошли в чат.");
                 DisplayData();
                 StartCommunication();
             }
